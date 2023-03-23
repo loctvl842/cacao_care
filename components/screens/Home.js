@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import axios from 'axios';
 import {AIO_KEY, AIO_USERNAME} from '@env';
@@ -41,8 +42,6 @@ const factors = [
 ];
 
 const EnvironmentalFactor = ({factor}) => {
-  // const AIO_KEY = 'aio_ZrDO10TgH4ZAUWLZI77wGSw4xfT8'; //take this in messenger
-  // const AIO_USERNAME = 'tamquattnb123';
   const [value, setValue] = useState(null);
   useEffect(() => {
     const intervalId = setInterval(async () => {
@@ -56,9 +55,7 @@ const EnvironmentalFactor = ({factor}) => {
           },
         );
         setValue(res.data.value);
-      } catch (e) {
-        alert(e);
-      }
+      } catch (e) {}
     }, 10000);
     return () => clearInterval(intervalId);
   }, []);
