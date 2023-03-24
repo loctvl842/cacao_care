@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import axios from 'axios';
-import { AIO_KEY, AIO_USERNAME } from '@env';
+import { ADAFRUIT_IO_KEY , ADAFRUIT_IO_USERNAME  } from '@env';
 import mqtt from "precompiled-mqtt"
 
 // icons
@@ -52,10 +52,10 @@ const EnvironmentalFactor = ({ factor }) => {
   useEffect(() => {
     const fetchData = async () => {
       const result = await axios.get(
-        `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${factor.feedKey}/data/last`,
+        `https://io.adafruit.com/api/v2/${ADAFRUIT_IO_USERNAME }/feeds/${factor.feedKey}/data/last`,
         {
           headers: {
-            "X-AIO-Key": AIO_KEY,
+            "X-AIO-Key": ADAFRUIT_IO_KEY ,
           },
         }
       );
@@ -66,15 +66,15 @@ const EnvironmentalFactor = ({ factor }) => {
 
   useEffect(() => {
     const client = mqtt.connect('wss://io.adafruit.com:443/mqtt/', {
-      username: AIO_USERNAME,
-      password: AIO_KEY,
+      username: ADAFRUIT_IO_USERNAME ,
+      password: ADAFRUIT_IO_KEY ,
     });
     client.on('connect', () => {
       console.log('connected');
-      client.subscribe(`${AIO_USERNAME}/feeds/${factor.feedKey}}`);
+      client.subscribe(`${ADAFRUIT_IO_USERNAME }/feeds/${factor.feedKey}}`);
     });
 
-    client.subscribe(`${AIO_USERNAME}/feeds/${factor.feedKey}`, err => {
+    client.subscribe(`${ADAFRUIT_IO_USERNAME }/feeds/${factor.feedKey}`, err => {
       if (err) {
         console.log(err);
       }
