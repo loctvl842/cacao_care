@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,12 @@ import {
   StatusBar,
 } from 'react-native';
 import axios from 'axios';
-import {AIO_KEY, AIO_USERNAME} from '@env';
+import { AIO_KEY, AIO_USERNAME } from '@env';
+import mqtt from "precompiled-mqtt"
+
+// icons
+import Entypo from 'react-native-vector-icons';
+
 
 import uuid from 'react-native-uuid';
 
@@ -19,45 +24,69 @@ const factors = [
     logo: require('../assets/temperature.png'),
     name: 'Temperature',
     unit: '°C',
-    feedName: 'dht20-temp',
+    feedKey: 'dht20-temp',
   },
   {
     logo: require('../assets/temperature.png'),
     name: 'Humidity',
     unit: '%',
-    feedName: 'dht20-humi',
+    feedKey: 'dht20-humi',
   },
   {
     logo: require('../assets/temperature.png'),
     name: 'Light',
     unit: '%',
-    feedName: 'yolo-light',
+    feedKey: 'yolo-light',
   },
   {
     logo: require('../assets/temperature.png'),
     name: 'Moisture',
     unit: '%',
-    feedName: 'yolo-moisture',
+    feedKey: 'yolo-moisture',
   },
 ];
 
-const EnvironmentalFactor = ({factor}) => {
+const EnvironmentalFactor = ({ factor }) => {
   const [value, setValue] = useState(null);
+
   useEffect(() => {
-    const intervalId = setInterval(async () => {
-      try {
-        const res = await axios.get(
-          `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${factor.feedName}/data/last`,
-          {
-            headers: {
-              'X-AIO-Key': AIO_KEY,
-            },
+    const fetchData = async () => {
+      const result = await axios.get(
+        `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${factor.feedKey}/data/last`,
+        {
+          headers: {
+            "X-AIO-Key": AIO_KEY,
           },
-        );
-        setValue(res.data.value);
-      } catch (e) {}
-    }, 10000);
-    return () => clearInterval(intervalId);
+        }
+      );
+      setValue(result.data.value);
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const client = mqtt.connect('wss://io.adafruit.com:443/mqtt/', {
+      username: AIO_USERNAME,
+      password: AIO_KEY,
+    });
+    client.on('connect', () => {
+      console.log('connected');
+      client.subscribe(`${AIO_USERNAME}/feeds/${factor.feedKey}}`);
+    });
+
+    client.subscribe(`${AIO_USERNAME}/feeds/${factor.feedKey}`, err => {
+      if (err) {
+        console.log(err);
+      }
+    });
+
+    client.on('message', (_, message) => {
+      const data = JSON.parse(message.toString());
+      setValue(data);
+    });
+    return () => {
+      client.end();
+    };
   }, []);
 
   return (
@@ -70,14 +99,14 @@ const EnvironmentalFactor = ({factor}) => {
       }}>
       <ImageBackground
         source={factor.logo}
-        style={{width: 50, height: 50}}
+        style={{ width: 50, height: 50 }}
         imageStyle={{
           width: '100%',
           height: '100%',
           borderRadius: 12,
         }}
       />
-      <View style={{marginLeft: 14, justifyContent: 'space-evenly'}}>
+      <View style={{ marginLeft: 14, justifyContent: 'space-evenly' }}>
         <Text
           style={{
             fontWeight: 400,
@@ -88,7 +117,7 @@ const EnvironmentalFactor = ({factor}) => {
           {factor.name}
         </Text>
         {value === null ? (
-          <ActivityIndicator size="small" style={{alignItems: 'flex-start'}} />
+          <ActivityIndicator size="small" style={{ alignItems: 'flex-start' }} />
         ) : (
           <Text
             style={{
@@ -137,10 +166,16 @@ const Home = () => {
           </View>
           <FlatList
             data={factors}
-            renderItem={({item}) => <EnvironmentalFactor factor={item} />}
+            renderItem={({ item }) => <EnvironmentalFactor factor={item} />}
             keyExtractor={() => uuid.v4()}
             numColumns={2}
           />
+        </View>
+        <View style={styles.infoContainer}>
+          <View style={styles.showcaseHeader}>
+            <Text style={styles.headerTitle}>Alerts for today</Text>
+            <Text style={styles.headerNavDetail}>View all</Text>
+          </View>
         </View>
       </View>
     </View>
